@@ -1,15 +1,18 @@
+#' This file contains the code used to clean, analyze, and model the data.
+#' 
+#' The working directory should be the project root folder `stat628-module1`.
+
 # Packages
 suppressPackageStartupMessages(library(tidyverse))
 library(ggplot2)
 suppressPackageStartupMessages(library(glmnet))
 library(leaps)
-library(car)
+suppressPackageStartupMessages(library(car))
 set.seed(628)
 
 # Open dataset
 dat <- suppressMessages(read_csv("data/BodyFat.csv"))
 summary(dat[2:17])
-
 
 # Root MSE calculator
 root.mse <- function(y, yhat) {
@@ -40,23 +43,23 @@ fig1 <- ggplot(dat, aes(DENSITY, BODYFAT)) + geom_point() +
 plot(fig1)
 
 # Look at abnomal points to see if they should be deleted
-dat[c(48,76,96,182),]
+dat[c(48, 76, 96, 182),]
 
 # Replace observation 182's bodyfat with 14.72%
-dat[182,2]<-14.72
+dat[182, 2] <- 14.72
 
 # Look at Cook's distance
 dat <- subset(dat, select = -c(DENSITY, IDNO))
 plot(lm(BODYFAT ~ ., dat), which = 4, main = "Figure 2")
-abline(h=4/(dim(dat)[1]-14-1),col="red")
+abline(h = 4 / (dim(dat)[1] - 14 - 1), col = "red")
 
 # Look at abnomal points to see if they should be deleted
 dat[c(39,42,86),]
 
 # Replace observation 42's height with 69.43 inches
-dat$HEIGHT[42]<-69.43
-plot(lm(BODYFAT ~ ., dat), which = 4, main="Figure 3")
-abline(h=4/(dim(dat)[1]-14-1),col="red")
+dat$HEIGHT[42] <- 69.43
+plot(lm(BODYFAT ~ ., dat), which = 4, main = "Figure 3")
+abline(h = 4 / (dim(dat)[1] - 14 - 1), col = "red")
 
 #############################
 # Linear relationship check #
@@ -159,11 +162,11 @@ summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST + FOREARM, dat))$sigma
 #################
 
 # Final linear model:
-bodyfat.model <- lm(BODYFAT ~ ABDOMEN + WEIGHT,data=dat)
-round(as.data.frame(coef(bodyfat.model)),1)
+bodyfat.model <- lm(BODYFAT ~ ABDOMEN + WEIGHT, data = dat)
+round(as.data.frame(coef(bodyfat.model)), 1)
 summary(bodyfat.model)
 
-round(confint(bodyfat.model),2)
+round(confint(bodyfat.model), 2)
 
 #################
 # Rule of Thumb #
@@ -176,40 +179,42 @@ bodyfat.model.yhat <- predict(bodyfat.model, dat)
 rot.yhat <- 0.91 * dat$ABDOMEN - 0.14 * dat$WEIGHT - 40
 
 # Exact vs. rule of thumb accuracy
-cat('Standard error of exact model:   ', root.mse(dat$BODYFAT, bodyfat.model.yhat))
-cat('\nStandard error of rule of thumb: ', root.mse(dat$BODYFAT, rot.yhat))
+cat('Standard error of exact model:   ',
+    root.mse(dat$BODYFAT, bodyfat.model.yhat))
+cat('\nStandard error of rule of thumb: ',
+    root.mse(dat$BODYFAT, rot.yhat))
 
-round(predict(bodyfat.model,newdata=data.frame(ABDOMEN=84, WEIGHT=173),interval="predict"),2)
+round(predict(bodyfat.model, newdata = data.frame(ABDOMEN = 84, WEIGHT = 173),
+              interval = "predict"), 2)
 
 ####################################
 # Model Evaluation and Diagnostics #
 ####################################
 
 # Model diagnostic plots
-layout(matrix(c(1,2,3,4), nrow = 2))
+layout(matrix(c(1, 2, 3, 4), nrow = 2))
 plot(bodyfat.model)
 layout(1)
-plot(predict(bodyfat.model),rstandard(bodyfat.model),pch=23,bg="red",cex=1.2,
-     xlab="Predicted Body Fat %", ylab="Standardized Residuals",main="Standardized Residual Plot")
-abline(a=0,b=0,col="black",lwd=3)
-
-# Multicolinearity
-#library(car)
-#vif(bodyfat.model)
+plot(predict(bodyfat.model), rstandard(bodyfat.model), pch = 23, bg = "red",
+     cex = 1.2, xlab = "Predicted Body Fat %", ylab = "Standardized Residuals",
+     main = "Standardized Residual Plot")
+abline(a = 0, b = 0, col = "black", lwd = 3)
 
 # Outlier or influential points 
 pii = hatvalues(bodyfat.model)
 cooki = cooks.distance(bodyfat.model)
 n = dim(dat)[1]
-plot(1:n,cooki,type="p",pch=23,bg="red",cex=1.2,
-     xlab="Index (Each Observation)",ylab="Cooki or pii",main="Influence Values (Pii and Cooki)")
-points(1:n,pii,type="p",pch=23,bg="green",cex=1.2)
-legend("topright",legend=c("pii","cooki"),pch=c(23,23),col=c("green","red"))
+plot(1:n, cooki, type = "p", pch = 23, bg = "red", cex=1.2,
+     xlab = "Index (Each Observation)", ylab = "Cooki or pii",
+     main = "Influence Values (Pii and Cooki)")
+points(1:n, pii, type = "p", pch = 23, bg = "green", cex = 1.2)
+legend("topright", legend = c("pii", "cooki"), pch = c(23,23),
+       col = c("green", "red"))
 
-# Seem that 39th point is an outlier, so we decided to evaluate the robustness of our model:
+# The 39th point is an outlier, so we decided to evaluate our model's robustness
 rodata <- dat[-39,]
 without <- lm(rodata$BODYFAT ~ rodata$ABDOMEN + rodata$WEIGHT)
-round(as.data.frame(coef(bodyfat.model)),2)
-round(as.data.frame(coef(without)),2)
-layout(matrix(c(1,2,3,4), nrow = 2))
+round(as.data.frame(coef(bodyfat.model)), 2)
+round(as.data.frame(coef(without)), 2)
+layout(matrix(c(1, 2, 3, 4), nrow = 2))
 plot(without)

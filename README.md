@@ -1,34 +1,30 @@
-# STAT 628 Module 1 Body Fat Calculator
+# STAT 628 Module 1: Body Fat Calculator
 
+### Authors
 
+* Yunhui Qi (qi44@wisc.edu)
+* Sam Waterbury (waterbury@wisc.edu)
+* Junxia Zhu (jzhu334@wisc.edu)
 
-#### Author:
+_(We belong to group #6 in the Thursday lecture.)_
 
-**Yunhui Qi, qi44@wisc.edu**
+### Introduction
 
-**Sam Waterbury, waterbury@wisc.edu**
+The goal of this project is to develop a simple rule of thumb technique for estimating body fat percentage using only measurements which can be easily obtained. After data cleaning, variable selection, model evaluation, and diagnostics, we obtained the following estimator:
 
-**Junxia Zhu, jzhu334@wisc.edu**
-
-### Introduction 
-The goal of this project is to develop a simple rule of thumb technique for estimating the body fat percentage using only measurements which can be easily obtained. After data cleaning, variable selection, model evaluation and diagnostic, we finally got:
-
-BODYFAT \% = 0.91 ABDOMEN(lbs) - 0.14 WEIGHT(cm) - 40 \% 
+`
+BODYFAT (%) = 0.91 * ABDOMEN (cm) - 0.14 * WEIGHT (lbs) - 40
+`
 
 This estimator is easy to understand and can be quickly computed since it only uses two variables.
 
-### Contents of the repository 
-#### Files
-Executive-Summary.ipynb ------ Jupyter Notebook of this project
+### Contents of this Repository
 
-shiny.R ------ web-based application of bodyfat calculator
+**Files:**
+* `Executive-Summary.ipynb` is the Jupyter notebook containing a summary of our analysis and results.
+* `Shiny-App.R` contains the code necessary for running the Shiny application. Running this file will open the app in a web browser.
+* `Final-Code.R` contains all of the code we wrote while working on this project.
 
-#### Folders
-data --------- raw data( BodyFat.csv )
-
-code --------- complete R code for our analysis( 0202all_code.R )
-
-images --------- figures and images produced by our analysis
-
-
-
+**Folders:**
+* `data/` contains the raw dataset and the "clean" dataset for which several outliers were removed.
+* `image/` contains the all of the plots and figures we produced.
