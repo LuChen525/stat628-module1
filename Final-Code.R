@@ -54,7 +54,7 @@ plot(lm(BODYFAT ~ ., dat), which = 4, main = "Figure 2")
 abline(h = 4 / (dim(dat)[1] - 14 - 1), col = "red")
 
 # Look at abnomal points to see if they should be deleted
-dat[c(39,42,86),]
+dat[c(39, 42, 86),]
 
 # Replace observation 42's height with 69.43 inches
 dat$HEIGHT[42] <- 69.43
@@ -127,13 +127,14 @@ cv.lasso1 <- cv.glmnet(x = lasso.dat, y = dat$BODYFAT,
 lasso.results <- data.frame(p = cv.lasso1$glmnet.fit$df,
                             explained = cv.lasso1$glmnet.fit$dev.ratio,
                             lambda = cv.lasso1$glmnet.fit$lambda)
-print(lasso.results[c(18, 21, 25, 33, 34, 41, 43, 45),])
+cat("Results of Lasso regression at the best Lambda value for each model size:\n")
+print(lasso.results[c(18, 21, 24, 33, 34, 42, 46, 49),])
 
 # Lasso regression using a specific lambda value chosen from above
-m1 <- glmnet(lasso.dat, dat$BODYFAT, lambda = 0.314200, alpha = 1)
+m1 <- glmnet(lasso.dat, dat$BODYFAT, lambda = 0.31424241, alpha = 1)
 
 # Standard error of the above model `m1`
-cat("\nRoot MSE for lambda=0.3145: ",
+cat("\nRoot MSE for lambda=0.314: ",
     root.mse(dat$BODYFAT, predict(m1, lasso.dat))) # = 4.132473
 
 #########################
@@ -152,10 +153,15 @@ best.subset <- regsubsets(x = dat.6vars, y = dat$BODYFAT, nvmax = 4,
 summary(best.subset)$outmat
 
 # OLS regressions for p=1,2,3,4 features
-summary(lm(BODYFAT ~ ABDOMEN, dat))$sigma
-summary(lm(BODYFAT ~ ABDOMEN + WEIGHT, dat))$sigma
-summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST, dat))$sigma
-summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST + FOREARM, dat))$sigma
+cat("p = 1  -->  sigma = ",
+    summary(lm(BODYFAT ~ ABDOMEN, dat))$sigma,
+    "\np = 2  -->  sigma = ",
+    summary(lm(BODYFAT ~ ABDOMEN + WEIGHT, dat))$sigma,
+    "\np = 3  -->  sigma = ",
+    summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST, dat))$sigma,
+    "\np = 4  -->  sigma = ",
+    summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST + FOREARM, dat))$sigma,
+    sep = "")
 
 #################
 # Model Fitting #
@@ -163,7 +169,7 @@ summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST + FOREARM, dat))$sigma
 
 # Final linear model:
 bodyfat.model <- lm(BODYFAT ~ ABDOMEN + WEIGHT, data = dat)
-round(as.data.frame(coef(bodyfat.model)), 1)
+round(as.data.frame(coef(bodyfat.model), 1))
 summary(bodyfat.model)
 
 round(confint(bodyfat.model), 2)
@@ -199,6 +205,10 @@ plot(predict(bodyfat.model), rstandard(bodyfat.model), pch = 23, bg = "red",
      cex = 1.2, xlab = "Predicted Body Fat %", ylab = "Standardized Residuals",
      main = "Standardized Residual Plot")
 abline(a = 0, b = 0, col = "black", lwd = 3)
+
+# Multicolinearity
+cat("VIF values for assessing multicollinearity:\n")
+vif(bodyfat.model)
 
 # Outlier or influential points 
 pii = hatvalues(bodyfat.model)
