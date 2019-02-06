@@ -88,7 +88,7 @@ layout(1)
 
 lm.max <- lm(BODYFAT ~ ., data = dat)
 lm.min <- lm(BODYFAT ~ 1, data = dat)
-scope <- list(lower=lm.min, upper=lm.max)
+scope <- list(lower = lm.min, upper = lm.max)
 
 # AIC
 lm1 <- step(object = lm.max, scope = scope, direction = "both",
@@ -127,7 +127,7 @@ cv.lasso1 <- cv.glmnet(x = lasso.dat, y = dat$BODYFAT,
 lasso.results <- data.frame(p = cv.lasso1$glmnet.fit$df,
                             explained = cv.lasso1$glmnet.fit$dev.ratio,
                             lambda = cv.lasso1$glmnet.fit$lambda)
-cat("Results of Lasso regression at the best Lambda value for each model size:\n")
+cat("Results of Lasso regression at best Lambda value for each model size:\n")
 print(lasso.results[c(18, 21, 24, 33, 34, 42, 46, 49),])
 
 # Lasso regression using a specific lambda value chosen from above
@@ -163,13 +163,71 @@ cat("p = 1  -->  sigma = ",
     summary(lm(BODYFAT ~ ABDOMEN + WEIGHT + WRIST + FOREARM, dat))$sigma,
     sep = "")
 
+#########################
+# Consider Interactions #
+#########################
+
+# Create a matrix including all second-order interactions of these 12 variables:
+# WEIGHT, ABDOMEN, FOREARM, WRIST, AGE, HEIGHT, and their respective inverses
+dat.6.vars <- as.matrix(
+  subset(dat, select = c(WEIGHT, ABDOMEN, FOREARM, WRIST, AGE, HEIGHT)))
+dat.6.vars.inverse <- 1 / dat.6.vars
+colnames(dat.6.vars.inverse) <- paste(colnames(dat.6.vars.inverse), "_INVERSE",
+                                      sep = "")
+dat.interactions <- model.matrix(~ . ^ 2, data = as.data.frame(
+  cbind(dat.6.vars, dat.6.vars.inverse)))
+
+# Cross-validated selection of lambda
+cv.lasso.int <- cv.glmnet(x = dat.interactions, y = dat$BODYFAT,
+                          type.measure = 'mse', alpha = 1)
+
+# Best lambda for each model size
+lasso.results.int <- data.frame(p = cv.lasso.int$glmnet.fit$df,
+                                explained = cv.lasso.int$glmnet.fit$dev.ratio,
+                                lambda = cv.lasso.int$glmnet.fit$lambda)
+cat("Results of Lasso regression at best Lambda value for each model size:\n")
+print(lasso.results.int[c(2, 3, 12, 15, 20, 22),])
+
+# Lasso regression using a specific lambda value chosen from above
+m.int <- glmnet(dat.interactions, dat$BODYFAT, lambda = 1.0870402, alpha = 1)
+coef(m.int)
+
+# Standard error of the above model `m.int`
+cat("\nRoot MSE for lambda=1.087: ",
+    root.mse(dat$BODYFAT, predict(m.int, dat.final.vars))) # = 4.17236
+
+###########################################
+# Best Subset Selection with Interactions #
+###########################################
+
+# Using the 5 identified features above, perform best subset selection
+vars.chosen <- c("ABDOMEN_INVERSE",
+                 "ABDOMEN:WRIST_INVERSE",
+                 "ABDOMEN:HEIGHT_INVERSE",
+                 "WRIST:ABDOMEN_INVERSE",
+                 "HEIGHT:ABDOMEN_INVERSE")
+dat.5.vars <- dat.final.vars[, vars.chosen]
+
+# Best subset selection
+best.subset <- regsubsets(x = dat.5.vars, y = dat$BODYFAT, nvmax = 4,
+                          method = 'exhaustive')
+View(summary(best.subset)$outmat)
+
+# OLS regression for p=1 interaction
+dat.5.vars <- as.data.frame(dat.5.vars)
+cat("p = 1  -->  sigma = ",
+    summary(lm(dat$BODYFAT ~ `HEIGHT:ABDOMEN_INVERSE`, dat.5.vars))$sigma,
+    sep = "")
+
+# This is not a better accuracy than our simple 2-variable linear model
+
 #################
 # Model Fitting #
 #################
 
 # Final linear model:
 bodyfat.model <- lm(BODYFAT ~ ABDOMEN + WEIGHT, data = dat)
-round(as.data.frame(coef(bodyfat.model), 1))
+round(as.data.frame(coef(bodyfat.model)), 1)
 summary(bodyfat.model)
 
 round(confint(bodyfat.model), 2)
@@ -228,3 +286,4 @@ round(as.data.frame(coef(bodyfat.model)), 2)
 round(as.data.frame(coef(without)), 2)
 layout(matrix(c(1, 2, 3, 4), nrow = 2))
 plot(without)
+
