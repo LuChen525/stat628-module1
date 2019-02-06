@@ -194,7 +194,7 @@ coef(m.int)
 
 # Standard error of the above model `m.int`
 cat("\nRoot MSE for lambda=1.087: ",
-    root.mse(dat$BODYFAT, predict(m.int, dat.final.vars))) # = 4.17236
+    root.mse(dat$BODYFAT, predict(m.int, dat.interactions))) # = 4.17236
 
 ###########################################
 # Best Subset Selection with Interactions #
@@ -206,12 +206,12 @@ vars.chosen <- c("ABDOMEN_INVERSE",
                  "ABDOMEN:HEIGHT_INVERSE",
                  "WRIST:ABDOMEN_INVERSE",
                  "HEIGHT:ABDOMEN_INVERSE")
-dat.5.vars <- dat.final.vars[, vars.chosen]
+dat.5.vars <- dat.interactions[, vars.chosen]
 
 # Best subset selection
 best.subset <- regsubsets(x = dat.5.vars, y = dat$BODYFAT, nvmax = 4,
                           method = 'exhaustive')
-View(summary(best.subset)$outmat)
+summary(best.subset)$outmat
 
 # OLS regression for p=1 interaction
 dat.5.vars <- as.data.frame(dat.5.vars)

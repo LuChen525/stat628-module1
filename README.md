@@ -26,5 +26,5 @@ This estimator is easy to understand and can be quickly computed since it only u
 * `Final-Code.R` contains all of the code we wrote while working on this project.
 
 **Folders:**
-* `data/` contains the raw dataset and the "clean" dataset for which several outliers were removed.
+* `data/` contains the raw dataset and the "clean" dataset for which several values were imputed.
 * `image/` contains the all of the plots and figures we produced.
