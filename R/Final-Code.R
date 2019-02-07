@@ -3,11 +3,13 @@
 #' The working directory should be the project root folder `stat628-module1`.
 
 # Packages
+options(warn = -1)
 suppressPackageStartupMessages(library(tidyverse))
 library(ggplot2)
 suppressPackageStartupMessages(library(glmnet))
 library(leaps)
 suppressPackageStartupMessages(library(car))
+suppressPackageStartupMessages(library(reshape2))
 set.seed(628)
 
 # Open dataset
@@ -29,6 +31,7 @@ siri <- function(density) {
 ############
 
 # Examine the difference between BODYFAT and values calculated with Siri's eq.
+options(repr.plot.width=3, repr.plot.height=2)
 fig1 <- ggplot(dat, aes(DENSITY, BODYFAT)) + geom_point() +
   stat_function(fun = siri, n = 101, color = "blue") +
   annotate("text", 1.065, 5, label = as.numeric(which(
@@ -48,18 +51,25 @@ dat[c(48, 76, 96, 182),]
 # Replace observation 182's bodyfat with 14.72%
 dat[182, 2] <- 14.72
 
-# Look at Cook's distance
-dat <- subset(dat, select = -c(DENSITY, IDNO))
-plot(lm(BODYFAT ~ ., dat), which = 4, main = "Figure 2")
-abline(h = 4 / (dim(dat)[1] - 14 - 1), col = "red")
+# Look at boxplot
+data<- read.csv("data/BodyFat.csv", header=T,check.names=F)
+data_m <- melt(data,id.vars="IDNO")
+p <- ggplot(data_m, aes(x=variable, y=value),color=variable) + 
+  geom_boxplot(aes(fill=factor(variable))) + 
+  #  theme(axis.text.x=element_text(angle=50,hjust=0.5, vjust=0.5)) +
+  theme(legend.position="none") + 
+  labs(title = "Figure 2") +
+  theme(plot.title = element_text(hjust = 0.5))
+p
 
 # Look at abnomal points to see if they should be deleted
-dat[c(39, 42, 86),]
+dat[c(39, 42),]
 
 # Replace observation 42's height with 69.43 inches
 dat$HEIGHT[42] <- 69.43
-plot(lm(BODYFAT ~ ., dat), which = 4, main = "Figure 3")
-abline(h = 4 / (dim(dat)[1] - 14 - 1), col = "red")
+
+# Remove IDNO and DENSITY to do regression
+dat <- dat[, c(-1, -3)]
 
 #############################
 # Linear relationship check #
@@ -128,14 +138,14 @@ lasso.results <- data.frame(p = cv.lasso1$glmnet.fit$df,
                             explained = cv.lasso1$glmnet.fit$dev.ratio,
                             lambda = cv.lasso1$glmnet.fit$lambda)
 cat("Results of Lasso regression at best Lambda value for each model size:\n")
-print(lasso.results[c(18, 21, 24, 33, 34, 42, 46, 49),])
+print(lasso.results[c(18, 21, 24, 33, 34, 42, 46),])
 
 # Lasso regression using a specific lambda value chosen from above
 m1 <- glmnet(lasso.dat, dat$BODYFAT, lambda = 0.31424241, alpha = 1)
 
 # Standard error of the above model `m1`
 cat("\nRoot MSE for lambda=0.314: ",
-    root.mse(dat$BODYFAT, predict(m1, lasso.dat))) # = 4.132473
+    root.mse(dat$BODYFAT, predict(m1, lasso.dat))) # = 4.149806
 
 #########################
 # Best Subset Selection #
@@ -149,7 +159,7 @@ dat.6vars <- as.matrix(
 
 # Best subset selection
 best.subset <- regsubsets(x = dat.6vars, y = dat$BODYFAT, nvmax = 4,
-                          method = 'exhaustive')
+                          method = "exhaustive")
 summary(best.subset)$outmat
 
 # OLS regressions for p=1,2,3,4 features
@@ -211,7 +221,6 @@ dat.5.vars <- dat.interactions[, vars.chosen]
 # Best subset selection
 best.subset <- regsubsets(x = dat.5.vars, y = dat$BODYFAT, nvmax = 4,
                           method = 'exhaustive')
-summary(best.subset)$outmat
 
 # OLS regression for p=1 interaction
 dat.5.vars <- as.data.frame(dat.5.vars)
@@ -227,29 +236,13 @@ cat("p = 1  -->  sigma = ",
 
 # Final linear model:
 bodyfat.model <- lm(BODYFAT ~ ABDOMEN + WEIGHT, data = dat)
-round(as.data.frame(coef(bodyfat.model)), 1)
+round(as.data.frame(coef(bodyfat.model)), 2)
+
+# Interpretation
 summary(bodyfat.model)
 
+# Confidence intervals
 round(confint(bodyfat.model), 2)
-
-#################
-# Rule of Thumb #
-#################
-
-# Exact model predictions
-bodyfat.model.yhat <- predict(bodyfat.model, dat)
-
-# Simplified rule of thumb predictions
-rot.yhat <- 0.91 * dat$ABDOMEN - 0.14 * dat$WEIGHT - 40
-
-# Exact vs. rule of thumb accuracy
-cat('Standard error of exact model:   ',
-    root.mse(dat$BODYFAT, bodyfat.model.yhat))
-cat('\nStandard error of rule of thumb: ',
-    root.mse(dat$BODYFAT, rot.yhat))
-
-round(predict(bodyfat.model, newdata = data.frame(ABDOMEN = 84, WEIGHT = 173),
-              interval = "predict"), 2)
 
 ####################################
 # Model Evaluation and Diagnostics #
@@ -275,15 +268,44 @@ n = dim(dat)[1]
 plot(1:n, cooki, type = "p", pch = 23, bg = "red", cex=1.2,
      xlab = "Index (Each Observation)", ylab = "Cooki or pii",
      main = "Influence Values (Pii and Cooki)")
+text(45, y = 0.15, labels = "39")
 points(1:n, pii, type = "p", pch = 23, bg = "green", cex = 1.2)
-legend("topright", legend = c("pii", "cooki"), pch = c(23,23),
+text(45, y = 0.45, labels = "39")
+legend("right", legend = c("pii", "cooki"), pch = c(23,23),
        col = c("green", "red"))
+
+####################
+# Robustness Tests #
+####################
 
 # The 39th point is an outlier, so we decided to evaluate our model's robustness
 rodata <- dat[-39,]
 without <- lm(rodata$BODYFAT ~ rodata$ABDOMEN + rodata$WEIGHT)
-round(as.data.frame(coef(bodyfat.model)), 2)
-round(as.data.frame(coef(without)), 2)
-layout(matrix(c(1, 2, 3, 4), nrow = 2))
-plot(without)
 
+# Use bootstrp sample to fit model and see changes of coefficients
+bootdat <- sample(dat, size = dim(dat)[1], replace = T)
+
+# Conbined results
+data.frame(with = round(coef(bodyfat.model), 2), without=round(coef(without), 2),
+           bootstrap = round(coef(lm(BODYFAT ~ ABDOMEN + WEIGHT,
+                                     data = bootdat)), 2))
+
+################################
+# Conclusion and example usage #
+################################
+
+# Exact model predictions
+bodyfat.model.yhat <- predict(bodyfat.model, dat)
+
+# Simplified rule of thumb predictions
+rot.yhat <- 0.91 * dat$ABDOMEN - 0.14 * dat$WEIGHT - 40.72
+
+# Exact vs. rule of thumb accuracy
+cat('Standard error of exact model:   ',
+    root.mse(dat$BODYFAT, bodyfat.model.yhat))
+cat('\nStandard error of rule of thumb: ',
+    root.mse(dat$BODYFAT, rot.yhat))
+
+# Example usage
+round(predict(bodyfat.model, newdata = data.frame(ABDOMEN = 84, WEIGHT = 173),
+              interval = "predict"), 2)

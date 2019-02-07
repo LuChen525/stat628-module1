@@ -23,8 +23,10 @@ This estimator is easy to understand and can be quickly computed since it only u
 **Files:**
 * `Executive-Summary.ipynb` is the Jupyter notebook containing a summary of our analysis and results.
 * `Shiny-App.R` contains the code necessary for running the Shiny application. Running this file will open the app in a web browser.
-* `Final-Code.R` contains all of the code we wrote while working on this project.
+* `Presentation Slides.pdf` contains our in-class presentation slides.
 
 **Folders:**
 * `data/` contains the raw dataset and the "clean" dataset for which several values were imputed.
 * `image/` contains the all of the plots and figures we produced.
+* `R/` contains all of the code we wrote to perform our analysis and plots for this project.
+

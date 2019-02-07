@@ -13,7 +13,7 @@ calculator <- function(x, y) {
   } else if (y < 40 | y > 150) {
     return("abdomen-out-of-bounds")
   } else {
-    return(-40 - 0.14 * x + 0.91 * y)
+    return(-40.27 - 0.14 * x + 0.91 * y)
   }
 }
 
@@ -130,7 +130,7 @@ server <- function(input, output) {
     if(result > 0 & result < 100) {
       paste("Your bodyfat percentage is: " , result, "%", sep = "")
     } else {
-      paste("You have unusual input values.")
+      paste("You have unusual input values leading to negative bodyfat.")
     }
   })
   output$bfp <- renderText({
